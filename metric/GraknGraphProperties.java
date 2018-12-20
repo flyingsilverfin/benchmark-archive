@@ -8,15 +8,17 @@ import grakn.core.concept.ConceptId;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Syntax;
+import grakn.core.graql.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
 import grakn.core.util.SimpleURI;
 import org.apache.commons.math3.util.Pair;
+import org.apache.commons.math3.util.CombinatoricsUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.Graql.var;
@@ -40,7 +42,7 @@ public class GraknGraphProperties implements GraphProperties {
     }
 
     @Override
-    public long maxDegree() {
+    public long maxDegreePresent() {
         // TODO do we need inference here?
         try (Grakn.Transaction tx = getTx(false)) {
             ComputeQuery<ConceptSetMeasure> query = tx.graql().compute(Syntax.Compute.Method.CENTRALITY).of("vertex");
@@ -142,49 +144,113 @@ public class GraknGraphProperties implements GraphProperties {
     }
 
     @Override
-    public List<Long> vertexDegree() {
+    public List<Long> vertexDegree(int hyperedgeCardinality) {
 
-        Stream<Long> nonzeroDegrees = Stream.empty();
-        long numNonzeroDegrees = 0;
-        long numZeroDegrees = 0;
+        List<Long> vertexDegrees = new LinkedList<>();
 
         // TODO do we need inference enabled here?
         try (Grakn.Transaction tx = getTx(false)) {
 
-            // compute degree of each  entitiy
-            // returns mapping { deg_n : set(entity ids) }
-            // does NOT return degree 0 entity IDs
-            ComputeQuery<ConceptSetMeasure> computeQuery = tx.graql().compute(Syntax.Compute.Method.CENTRALITY).of("entity");
+            // since we want to restrict to a certain cardinality, we can't use compute
+            // dynamically build a match finding relationships with a specific number of role players
 
-            // collect it to a list so we don't have to execute it twice
-            List<ConceptSetMeasure> answerMap = computeQuery.execute();
+            VarPattern vertex = var("start").isa("entity");
+            VarPattern relationshipPattern = var("r").isa("relationship").rel("start");
+            // enforce a specific number of endpoints of the relationship
+            // one is required to be related to the vertex
+            for (int i = 0; i < hyperedgeCardinality - 1; i++) {
+                relationshipPattern = relationshipPattern.rel(var("end" + i));
+            }
 
-            // repeatedly emit the degree
-            nonzeroDegrees = answerMap.stream().map(
-                    // take each degree and the number of vertices associated with it, then emit the degree that many times
-                    conceptSetMeasure ->
-                            IntStream.range(0, conceptSetMeasure.set().size()).
-                                    mapToLong(i -> conceptSetMeasure.measurement().longValue())
+            GetQuery getQuery = tx.graql().match(vertex, relationshipPattern).get("start","r");
+            // convert stream of (x, n-ary relationship) into map<x, set<n-ary relationship>>
+            Map<Concept, Set<Concept>> entityRelationships = getQuery.stream()
+                    .collect(Collectors.toMap(
+                            conceptMap -> conceptMap.get("start"),
+                            conceptMap -> Stream.of(conceptMap.get("r")).collect(Collectors.toSet()),
+                            (relSet1, relSet2) -> Stream.concat(relSet1.stream(), relSet2.stream()).collect(Collectors.toSet())
+                    ));
 
-            ).flatMap(e -> e.boxed()); // convert Stream<LongStream> to Stream<Long>
+            // count how many times each relationship we retrieved contributes to
+            // each attached entity's degree
+            for (Map.Entry<Concept, Set<Concept>> entry : entityRelationships.entrySet()) {
+                long count = 0;
+                ConceptId startEntityId = entry.getKey().id();
+                for (Concept relationship : entry.getValue()) {
+                    List<ConceptId> endpointIds = relationship.asRelationship()
+                            .rolePlayers()
+                            .map(thing -> thing.id())
+                            .collect(Collectors.toList());
+                    // count how many times this relationship touches the starting entity
+                    // it could be more than once, since we allow the same entity to play roles multiple times
 
-            // count how many entities have non-zero degree
-            numNonzeroDegrees = answerMap.stream().
-                    map(conceptSetMeasure -> conceptSetMeasure.set().size()).
-                    reduce((a, b) -> a + b).
-                    orElse(0);
 
-            // ***** `compute centrality using degree` doesn't return 0 for disconnected entities *****
-            // count total number of vertices to see how many have degree == 0
-            List<Value> conceptCounts = tx.graql().compute(Syntax.Compute.Method.COUNT).in("entity").execute();
-            long totalVertices = conceptCounts.get(0).asValue().number().longValue();
+                    /**
+                     *
+                     * TODO
+                     * ****** ISSUES *****
+                     *
+                     * currently, things playing the same role multiples times are only returned ONCE, so we can't
+                     * count the degree of an entity with respect to that relationship this way!!!
+                     * Doesn't work with rolePlayerMap or rolePlayers
+                     *
+                     * Other major issue:
+                     * querying as above for `match $r ($x, $y) isa  relationship; get $r`
+                     * Breaks down hyper-relationships into binary relationships!!!!
+                     * Need a better way to restrict to n-ary relationships in general, rather than having
+                     * grakn return the >n -nary relationships in all combinations
+                     *
+                     */
+
+
+
+
+
+                    count += endpointIds.stream().filter(conceptId -> conceptId.equals(startEntityId)).count();
+                }
+                // save this vertex's degree when counting only n-nary degrees (== hyperedgeCardinality)
+                vertexDegrees.add(count);
+            }
+
+            int numNonzeroDegrees = vertexDegrees.size();
+
             // compute how many vertices have zero degree
-            numZeroDegrees = totalVertices - numNonzeroDegrees;
+            long numZeroDegrees = numVertices() - numNonzeroDegrees;
+
+            // add that many zeros to the end of the list
+            vertexDegrees.addAll(LongStream.range(0, numZeroDegrees).map(i->0l).boxed().collect(Collectors.toList()));
         }
 
-        return Stream.concat(nonzeroDegrees,
-                IntStream.range(0, (int)(numZeroDegrees)).map(i->0).asLongStream().boxed())
-                .collect(Collectors.toList());
+        return vertexDegrees;
+    }
+
+
+    public long numVertices() {
+        // TODO need inference enabled here?
+        try (Grakn.Transaction tx = getTx(false)) {
+            // count how many times to return `0` degree
+            // compute this as (total number of entities) - (number we have already accounted for above)
+            List<Value> conceptCounts = tx.graql().compute(Syntax.Compute.Method.COUNT).in("entity").execute();
+            return conceptCounts.get(0).asValue().number().longValue();
+        }
+    }
+
+    @Override
+    public long maxAllowedDegree(int hyperedgeCardinality) {
+        long numEntities = numVertices();
+//        if (allowLoopEdges) {
+            long maxAllowedDegree = 0;
+            // loop over how many roles are connected the chosen entity 'x'
+            for (int i = 1; i < hyperedgeCardinality+1; i++) {
+                // calculate how many degrees are contributed by an edge to 'x', and how many possible ways there are
+                // for such an edge to exist
+                maxAllowedDegree += i*CombinatoricsUtils.binomialCoefficient((int)numEntities - 1, hyperedgeCardinality - i);
+            }
+            return maxAllowedDegree;
+//        } else {
+//            // this is (|v|-1) choose (n-ary - 1)
+//            return CombinatoricsUtils.binomialCoefficient((int)numEntities - 1, hyperedgeCardinality - 1);
+//        }
     }
 
     @Override

@@ -7,11 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class StandardGraphProperties implements GraphProperties {
 
-    private HashMap<String, Set<String>> doubleAdjacencyList;
+    private HashMap<String, Set<String>> doubleAdjacencyListsMap;
 
     /**
      * Read a possibly commented (#) CSV/TSV edge list file, listing edges as vertex lists separated by `separator`
@@ -37,23 +36,23 @@ public class StandardGraphProperties implements GraphProperties {
             vertexIds.add(pair.getSecond());
         }
         // initialize double adjacency lists
-        doubleAdjacencyList = new HashMap<>(vertexIds.size());
+        doubleAdjacencyListsMap = new HashMap<>(vertexIds.size());
         for (String id : vertexIds) {
-            doubleAdjacencyList.put(id, new HashSet<>());
+            doubleAdjacencyListsMap.put(id, new HashSet<>());
         }
 
         // convert edge list to double adjacency lists for easier/faster accesses
         for (Pair<String, String> edge : edgeList) {
             String start = edge.getFirst();
             String end = edge.getSecond();
-            doubleAdjacencyList.get(start).add(end);
-            doubleAdjacencyList.get(end).add(start);
+            doubleAdjacencyListsMap.get(start).add(end);
+            doubleAdjacencyListsMap.get(end).add(start);
         }
     }
 
     @Override
-    public long maxDegree() {
-        return this.vertexDegree().stream().max(Comparator.naturalOrder()).orElse(0l);
+    public long maxDegreePresent() {
+        return this.vertexDegree(2).stream().max(Comparator.naturalOrder()).orElse(0l);
     }
 
     /**
@@ -68,7 +67,7 @@ public class StandardGraphProperties implements GraphProperties {
      */
     @Override
     public List<Pair<Set<String>, Set<String>>> connectedEdgePairs(boolean edgeCardinalitiesGreaterThanOne) {
-        return doubleAdjacencyList.entrySet().stream()
+        return doubleAdjacencyListsMap.entrySet().stream()
             .map(
                 stringSetEntry -> {
                     String start = stringSetEntry.getKey();
@@ -128,7 +127,7 @@ public class StandardGraphProperties implements GraphProperties {
      */
     @Override
     public List<Pair<Long, Long>> connectedVertexDegrees() {
-        return doubleAdjacencyList.entrySet().stream()
+        return doubleAdjacencyListsMap.entrySet().stream()
             .map(
                 stringSetEntry -> {
                     String start = stringSetEntry.getKey();
@@ -136,7 +135,7 @@ public class StandardGraphProperties implements GraphProperties {
                     Long startDegree = neighbors.contains(start) ? 1l + neighbors.size() : neighbors.size();
 
                     return neighbors.stream().map(end -> {
-                        Set<String> endNeighbors = doubleAdjacencyList.get(end);
+                        Set<String> endNeighbors = doubleAdjacencyListsMap.get(end);
                         Long endDegree = endNeighbors.contains(end) ? 1l + endNeighbors.size() : endNeighbors.size();
                         return new Pair<>(startDegree, endDegree);
                     });
@@ -150,11 +149,12 @@ public class StandardGraphProperties implements GraphProperties {
      * Stream the degree of each vertex
      * NOTE: in graph theory, a self-edge (loop) counts as +2 (or +n for self-hyperedges)
      * In this case, we only have +2 for self edges since we don't allow hyperedges
+     * @param hyperedgeCardinality IGNORED, all edges in standard graphs have cardinality 2
      * @return
      */
     @Override
-    public List<Long> vertexDegree() {
-        return this.doubleAdjacencyList.entrySet().stream().map(
+    public List<Long> vertexDegree(int hyperedgeCardinality) {
+        return this.doubleAdjacencyListsMap.entrySet().stream().map(
                 entrySet -> {
                     String vertexId = entrySet.getKey();
                     Set<String> neighbors = entrySet.getValue();
@@ -167,8 +167,28 @@ public class StandardGraphProperties implements GraphProperties {
         ).collect(Collectors.toList());
     }
 
+    /**
+     * Standard graphs are only allowed binary edges, no ternary, or n-nary edges
+     * @param hyperedgeCardinality IGNORED
+//     * @param allowLoopEdges allow loop edges (ie A -> A)
+     * @return
+     */
+    @Override
+    public long maxAllowedDegree(int hyperedgeCardinality) {
+//        if (allowLoopEdges) {
+            return numVertices();
+//        } else {
+//            return numVertices() - 1;
+//        }
+    }
+
+    @Override
+    public long numVertices() {
+        return this.doubleAdjacencyListsMap.size();
+    }
+
     @Override
     public Set<String> neighbors(String vertexId) {
-        return this.doubleAdjacencyList.get(vertexId);
+        return this.doubleAdjacencyListsMap.get(vertexId);
     }
 }

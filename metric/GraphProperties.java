@@ -6,14 +6,17 @@ import java.util.List;
 import java.util.Set;
 
 public interface GraphProperties {
-     long maxDegree();
+     long maxDegreePresent();
 
      /*
      stream the undirected edge's endpoint's degrees twice each - in each direction
      IE. an edge between a vertex of degree 1 and degree 2 produces two connected vertex degrees: (1,2) and (2,1)
       */
      List<Pair<Long, Long>> connectedVertexDegrees();
-     List<Long> vertexDegree();
+     List<Long> vertexDegree(int hyperedgeCardinality);
+
+     long maxAllowedDegree(int hyperedgeCardinality);
+     long numVertices();
 
      /*
      Stream pairs of sets of vertex/entity IDs, each of which represents a hyperedge
@@ -24,5 +27,6 @@ public interface GraphProperties {
       */
      List<Pair<Set<String>, Set<String>>> connectedEdgePairs(boolean edgeCardinalitiesGreaterThanOne);
      Set<String> neighbors(String vertexId);
+
 }
 

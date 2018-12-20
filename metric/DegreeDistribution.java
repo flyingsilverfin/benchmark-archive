@@ -9,12 +9,21 @@ import java.util.LinkedList;
 
 public class DegreeDistribution {
 
-    public static long[] discreteDistribution(GraphProperties properties, double[] percentiles) {
+    public static double[] normalizedBinaryEdgeDegreeDistribution(GraphProperties properties, double[] percentiles) {
+        long[] discreteDistribution = binaryEdgeDegreeDistribution(properties, percentiles);
+        double maxAllowedDegree = properties.maxAllowedDegree(2);
+        double[] normalizedDiscreteDistribution = new double[discreteDistribution.length];
+        for (int i = 0; i < normalizedDiscreteDistribution.length; i++) {
+            normalizedDiscreteDistribution[i] = discreteDistribution[i]/maxAllowedDegree;
+        }
+        return normalizedDiscreteDistribution;
+    }
 
+    public static long[] binaryEdgeDegreeDistribution(GraphProperties properties, double[] percentiles) {
 
         // consume stream of Integers representing vertex degrees
         LinkedList<Long> allDegrees = new LinkedList<>();
-        properties.vertexDegree().forEach(degree -> allDegrees.add(degree));
+        properties.vertexDegree(2).forEach(degree -> allDegrees.add(degree));
         // identity function unboxes Double to double
         double[] allDegreesArray = allDegrees.stream().mapToDouble(l -> l).toArray();
 

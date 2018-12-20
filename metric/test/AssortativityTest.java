@@ -74,9 +74,6 @@ public class AssortativityTest {
 
         double allowedDeviation = 0.000001;
         assertEquals(correctAssortativity, computedAssortativity, allowedDeviation);
-        System.out.println(correctAssortativity);
-        System.out.println(computedAssortativity);
-
     }
 
 
@@ -114,7 +111,7 @@ public class AssortativityTest {
         );
 
         when(mockProperties.connectedVertexDegrees()).thenReturn(connectedVertexDegrees);
-        when(mockProperties.maxDegree()).thenReturn(3l);
+        when(mockProperties.maxDegreePresent()).thenReturn(3l);
 
         INDArray jointDegreeMatrix = Assortativity.jointDegreeOccurrence(mockProperties);
 
@@ -138,9 +135,6 @@ public class AssortativityTest {
 
         double allowedDelta = 0.000001;
         assertArrayEquals(correctJointDegreeMatrix.ravel().toDoubleVector(), jointDegreeMatrix.ravel().toDoubleVector(), allowedDelta);
-        System.out.println(Arrays.toString(correctJointDegreeMatrix.ravel().toDoubleVector()));
-        System.out.println(Arrays.toString(jointDegreeMatrix.ravel().toDoubleVector()));
-
     }
 
 }

@@ -49,9 +49,9 @@ public class Assortativity {
 
     public static INDArray jointDegreeOccurrence(GraphProperties properties) {
 
-        long maxDegree = properties.maxDegree();
+        long maxDegree = properties.maxDegreePresent();
 
-        // create a maxDegree x maxDegree matrix
+        // create a maxDegreePresent x maxDegreePresent matrix
         // populate it with the stream of joined Degrees
 
         INDArray jointDegreeOccurrence = Nd4j.zeros(maxDegree+1, maxDegree+1);
