@@ -12,7 +12,7 @@ public class SchemaSpecificDataGeneratorFactory {
                 return new WebContentGenerator(random, storage);
             case "societal_model":
                 return new SocietalModelGenerator(random, storage);
-            case "debug":
+            case "debugging":
                 return new DebuggingGenerator(random, storage);
             default:
                 throw new RuntimeException("Unknown specific schema generation strategy name: " + name);
