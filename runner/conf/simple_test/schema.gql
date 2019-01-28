@@ -1,0 +1,4 @@
+define
+    person sub entity, plays friend;
+
+    friendship sub relationships, relates friend;

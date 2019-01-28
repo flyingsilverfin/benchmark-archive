@@ -94,7 +94,6 @@ public class DataGenerator {
         int graphScale = dataStrategies.getGraphScale();
 
         while (graphScale < graphScaleLimit) {
-            graphScale = dataStrategies.getGraphScale();
             try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
                 TypeStrategyInterface typeStrategy = operationStrategies.next().next();
                 GeneratorInterface generator = gf.create(typeStrategy, tx); // TODO Can we do without creating a new generator each iteration
@@ -104,12 +103,13 @@ public class DataGenerator {
 
                 // execute & parse the results
                 this.processQueryStream(queryStream);
-                iteration++;
 
+                graphScale = dataStrategies.getGraphScale();
                 printProgress(graphScale, typeStrategy.getTypeLabel());
 
                 tx.commit();
             }
+            iteration++;
         }
         System.out.println("\n");
     }

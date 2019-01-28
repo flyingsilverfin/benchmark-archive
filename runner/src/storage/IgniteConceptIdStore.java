@@ -263,7 +263,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
 
             // check if this ID is already in the table suffices
             try (Statement stmt = this.conn.createStatement()) {
-                String checkExists = "SELECT id FROM " + tableName + " WHERE id = '" + conceptId + "'";
+                String checkExists = "SELECT id FROM " + tableName + " WHERE id = '" + conceptId + "' ORDER BY id";
                 try (ResultSet rs = stmt.executeQuery(checkExists)) {
                     // skip insertion if this query has any results
                     if (rs.next()) {
@@ -327,7 +327,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     public void addRolePlayer(String conceptId) {
         // add the conceptID to the overall role players table
         try (Statement stmt = conn.createStatement()) {
-            String checkExists = "SELECT id FROM roleplayers WHERE id = '" + conceptId + "'";
+            String checkExists = "SELECT id FROM roleplayers WHERE id = '" + conceptId + "' ORDER BY id";
             try (ResultSet rs = stmt.executeQuery(checkExists)) {
                 if (rs.next()) {
                     // if we have any rows matching this ID, skip
@@ -365,7 +365,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
         try (Statement stmt = conn.createStatement()) {
             // do a select to retrieve currently filled roles by this conceptID in this relationship
             String retrieveCurrentRolesSql = "SELECT " + sqlRelationship + " from " + sqlTypeTable +
-                    " where id = '" + conceptId + "'";
+                    " where id = '" + conceptId + "' ORDER BY id";
             String currentRoles = "";
             try (ResultSet rs = stmt.executeQuery(retrieveCurrentRolesSql)) {
                 rs.next(); // move to cursor first result
@@ -396,7 +396,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
         String roleName = convertTypeLabelToSqlName(role);
 
         String sql = "SELECT ID, " + columnName + " FROM " + tableName +
-                " WHERE (" + columnName + " IS NULL OR " + columnName + "  NOT LIKE '%" + roleName + "%')";
+                " WHERE (" + columnName + " IS NULL OR " + columnName + "  NOT LIKE '%" + roleName + "%') ORDER BY id";
 
         LinkedList<String> ids = new LinkedList<>();
 
@@ -443,14 +443,14 @@ public class IgniteConceptIdStore implements IdStoreInterface {
 
     private String sqlGetId(String typeLabel, int offset) {
         String sql = "SELECT id FROM " + getTableName(typeLabel) +
-                " OFFSET " + offset +
+                " ORDER BY id OFFSET " + offset +
                 " FETCH FIRST ROW ONLY";
         return sql;
     }
 
     private String sqlGetAttrValue(String typeLabel, int offset) {
         String sql = "SELECT value FROM " + getTableName(typeLabel) +
-                " OFFSET " + offset +
+                " ORDER BY id OFFSET " + offset +
                 " FETCH FIRST ROW ONLY";
         return sql;
     }
@@ -637,7 +637,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     }
 
     private Set<String> getIds(String tableName) {
-        String sql = "SELECT id FROM " + tableName;
+        String sql = "SELECT id FROM " + tableName + " ORDER BY id";
         Set<String> ids = new HashSet<>();
         try (Statement stmt = conn.createStatement()) {
             try (ResultSet resultSet = stmt.executeQuery(sql)) {
