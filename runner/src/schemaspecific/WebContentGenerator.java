@@ -14,10 +14,7 @@ import grakn.benchmark.runner.strategy.RolePlayerTypeStrategy;
 import grakn.benchmark.runner.strategy.RouletteWheel;
 import grakn.benchmark.runner.strategy.TypeStrategyInterface;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 @Deprecated
 public class WebContentGenerator implements SchemaSpecificDataGenerator {
@@ -625,7 +622,7 @@ public class WebContentGenerator implements SchemaSpecificDataGenerator {
     }
 
     private RelationshipStrategy relationshipStrategy(String relationshipTypeLabel, ProbabilityDensityFunction pdf, RolePlayerTypeStrategy... roleStrategiesList) {
-        Set<RolePlayerTypeStrategy> roleStrategies = new HashSet<>(Arrays.asList(roleStrategiesList));
+        List<RolePlayerTypeStrategy> roleStrategies = Arrays.asList(roleStrategiesList);
         return new RelationshipStrategy(relationshipTypeLabel, pdf, roleStrategies);
     }
 

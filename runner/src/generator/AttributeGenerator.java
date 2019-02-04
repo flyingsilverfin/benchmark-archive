@@ -28,6 +28,8 @@ import grakn.benchmark.runner.probdensity.FixedConstant;
 import grakn.benchmark.runner.pick.StreamProviderInterface;
 import grakn.benchmark.runner.strategy.AttributeOwnerTypeStrategy;
 import grakn.benchmark.runner.strategy.AttributeStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -40,6 +42,7 @@ import java.util.stream.Stream;
  */
 public class AttributeGenerator<OwnerDatatype, ValueDatatype> extends Generator<AttributeStrategy<OwnerDatatype, ValueDatatype>> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeGenerator.class);
     /**
      * @param strategy
      * @param tx
@@ -56,6 +59,8 @@ public class AttributeGenerator<OwnerDatatype, ValueDatatype> extends Generator<
         QueryBuilder qb = this.tx.graql();
         int numInstances = this.strategy.getNumInstancesPDF().sample();
 
+        LOG.info("attr instances: " + numInstances);
+
         StreamProviderInterface<ValueDatatype> valuePicker = this.strategy.getPicker();
         valuePicker.reset();
         FixedConstant unityPDF = new FixedConstant(1);
@@ -66,6 +71,7 @@ public class AttributeGenerator<OwnerDatatype, ValueDatatype> extends Generator<
             Var attr = Graql.var().asUserDefined();
             Stream<ValueDatatype> valueStream = valuePicker.getStream(unityPDF, tx);
             ValueDatatype value = valueStream.findFirst().get();
+            LOG.info("Attr value: " + value);
             return (Query) qb.insert(attr.isa(attributeTypeLabel), attr.val(value));
         }).limit(numInstances).filter(Objects::nonNull);
     }

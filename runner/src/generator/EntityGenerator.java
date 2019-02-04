@@ -22,6 +22,8 @@ import grakn.core.client.Grakn;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
 import grakn.benchmark.runner.strategy.EntityStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.stream.Stream;
 
@@ -31,6 +33,9 @@ import static grakn.core.graql.internal.pattern.Patterns.var;
  *
  */
 public class EntityGenerator extends Generator<EntityStrategy> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EntityGenerator.class);
+
     public EntityGenerator(EntityStrategy strategy, Grakn.Transaction tx) {
         super(strategy, tx);
     }
@@ -49,9 +54,9 @@ public class EntityGenerator extends Generator<EntityStrategy> {
         Query query = qb.insert(var("x").isa(typeLabel));
 
         int numInstances = this.strategy.getNumInstancesPDF().sample();
+        LOG.info("num entities: " + numInstances);
 
         Stream<Query> stream = Stream.generate(() -> query)
-//                .map(q -> (Query) q)
                 .limit(numInstances);
         return stream;
     }

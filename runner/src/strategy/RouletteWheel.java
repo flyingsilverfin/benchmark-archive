@@ -18,6 +18,9 @@
 
 package grakn.benchmark.runner.strategy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.NavigableMap;
 import java.util.Random;
 import java.util.TreeMap;
@@ -26,6 +29,9 @@ import java.util.TreeMap;
  * @param <T>
  */
 public class RouletteWheel<T> implements PickableCollection {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RouletteWheel.class);
+
     private final NavigableMap<Double, T> map = new TreeMap<Double, T>();
     private final Random random;
     private double total = 0;
@@ -42,7 +48,9 @@ public class RouletteWheel<T> implements PickableCollection {
     }
 
     public T next() {
-        double value = random.nextDouble() * total;
+        double nextDouble = random.nextDouble();
+        LOG.info("RouletteWheel nextDouble: " + nextDouble);
+        double value = nextDouble * total;
         return map.higherEntry(value).getValue();
     }
 }

@@ -31,9 +31,7 @@ import grakn.benchmark.runner.strategy.RolePlayerTypeStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.pattern.Patterns.var;
@@ -60,8 +58,9 @@ public class RelationshipGenerator extends Generator<RelationshipStrategy> {
         QueryBuilder qb = this.tx.graql();
 
         int numInstances = this.strategy.getNumInstancesPDF().sample();
+        LOG.info("num relationships: " + numInstances);
 
-        Set<RolePlayerTypeStrategy> rolePlayerTypeStrategies = this.strategy.getRolePlayerTypeStrategies();
+        List<RolePlayerTypeStrategy> rolePlayerTypeStrategies = this.strategy.getRolePlayerTypeStrategies();
         for (RolePlayerTypeStrategy rolePlayerTypeStrategy : rolePlayerTypeStrategies) {
             // Reset the roleplayer pickers to cater for the case where they are central
             rolePlayerTypeStrategy.getPicker().reset();

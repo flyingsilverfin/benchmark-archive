@@ -5,7 +5,6 @@ import grakn.benchmark.runner.pick.StreamProvider;
 import grakn.benchmark.runner.probdensity.FixedConstant;
 import grakn.benchmark.runner.probdensity.FixedDiscreteGaussian;
 import grakn.benchmark.runner.probdensity.ScalingDiscreteGaussian;
-import grakn.benchmark.runner.probdensity.ScalingUniform;
 import grakn.benchmark.runner.storage.ConceptStore;
 import grakn.benchmark.runner.storage.FromIdStorageConceptIdPicker;
 import grakn.benchmark.runner.storage.IdStoreInterface;
@@ -13,8 +12,8 @@ import grakn.benchmark.runner.storage.NotInRelationshipConceptIdPicker;
 import grakn.benchmark.runner.strategy.*;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Random;
+import java.util.TreeSet;
 
 public class FinancialTransactionsGenerator implements SchemaSpecificDataGenerator{
 
@@ -99,7 +98,7 @@ public class FinancialTransactionsGenerator implements SchemaSpecificDataGenerat
                 new RelationshipStrategy(
                         "transaction",
                         new FixedDiscreteGaussian(this.random, 50, 10), // but fixed number of rels added per iter
-                        new HashSet<>(Arrays.asList(transactorRolePlayer))
+                        Arrays.asList(transactorRolePlayer)
                 )
         );
 
@@ -134,7 +133,7 @@ public class FinancialTransactionsGenerator implements SchemaSpecificDataGenerat
                 new RelationshipStrategy(
                         "@has-quantity",
                         new ScalingDiscreteGaussian(random, () -> getGraphScale(), 0.01, 0.005), // more than number of entities being created to compensate for being picked less
-                        new HashSet<>(Arrays.asList(quantityOwner, quantityValue))
+                        Arrays.asList(quantityOwner, quantityValue)
                 )
         );
 

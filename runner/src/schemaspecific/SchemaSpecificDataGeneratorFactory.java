@@ -12,8 +12,6 @@ public class SchemaSpecificDataGeneratorFactory {
                 return new WebContentGenerator(random, storage);
             case "societal_model":
                 return new SocietalModelGenerator(random, storage);
-            case "debugging":
-                return new DebuggingGenerator(random, storage);
             case "social_network":
                 return new SocialNetworkGenerator(random, storage);
             case "road_network":

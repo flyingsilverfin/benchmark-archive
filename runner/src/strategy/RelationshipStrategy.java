@@ -21,21 +21,23 @@ package grakn.benchmark.runner.strategy;
 import grakn.benchmark.runner.probdensity.ProbabilityDensityFunction;
 import grakn.core.concept.RelationshipType;
 
+import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
 
 /**
  *
  */
 public class RelationshipStrategy extends TypeStrategy<RelationshipType> {
 
-    private Set<RolePlayerTypeStrategy> rolePlayerTypeStrategies;
+    private List<RolePlayerTypeStrategy> rolePlayerTypeStrategies;
 
-    public <P extends ProbabilityDensityFunction> RelationshipStrategy(String typeLabel, P numInstancesPDF, Set<RolePlayerTypeStrategy> rolePlayerTypeStrategies) {
+    public <P extends ProbabilityDensityFunction> RelationshipStrategy(String typeLabel, P numInstancesPDF, List<RolePlayerTypeStrategy> rolePlayerTypeStrategies) {
         super(typeLabel, numInstancesPDF);
         this.rolePlayerTypeStrategies = rolePlayerTypeStrategies;
     }
 
-    public Set<RolePlayerTypeStrategy> getRolePlayerTypeStrategies() {
+    public List<RolePlayerTypeStrategy> getRolePlayerTypeStrategies() {
         return rolePlayerTypeStrategies;
     }
 }

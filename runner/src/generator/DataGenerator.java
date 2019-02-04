@@ -179,17 +179,17 @@ public class DataGenerator {
                 orphanEntities, orphanAttrs, density));
 
         // write to log verbosely in DEBUG that it doesn't overwrite
-        LOG.debug(String.format("----- Iteration %d [%s] ----- ", this.iteration, this.graphName));
+//        LOG.debug(String.format("----- Iteration %d [%s] ----- ", this.iteration, this.graphName));
         LOG.debug(String.format(">> Generating instances of concept type \"%s\"", generatedTypeLabel));
-        LOG.debug(String.format(">> %d - Scale", graphScale));
+//        LOG.debug(String.format(">> %d - Scale", graphScale));
         LOG.debug(String.format(">> %d, %d, %d - entity, explicit relationships, attributes", entities, explicitRelationships, attributes));
-        LOG.debug(String.format(">> %d, %d - entity orphans, attribute orphans ", orphanEntities, orphanAttrs));
-        LOG.debug(String.format(">> %d - Total relationship double counts", relDoubleCounts));
-        LOG.debug(String.format(">> %f, %f, %f - mean Deg_Cin, mean Deg_Rout, mean Deg_Aout",
-                meanInDegree, meanRolePlayersPerRelationship, meanAttributeOwners));
-        LOG.debug(String.format(">> %f, %f %f - proportion entities, relationships, attributes",
-                proportionEntities, proportionRelationships, proportionAttributes));
-        LOG.debug(String.format(">> %f - custom density", density));
+//        LOG.debug(String.format(">> %d, %d - entity orphans, attribute orphans ", orphanEntities, orphanAttrs));
+//        LOG.debug(String.format(">> %d - Total relationship double counts", relDoubleCounts));
+//        LOG.debug(String.format(">> %f, %f, %f - mean Deg_Cin, mean Deg_Rout, mean Deg_Aout",
+//                meanInDegree, meanRolePlayersPerRelationship, meanAttributeOwners));
+//        LOG.debug(String.format(">> %f, %f %f - proportion entities, relationships, attributes",
+//                proportionEntities, proportionRelationships, proportionAttributes));
+//        LOG.debug(String.format(">> %f - custom density", density));
     }
 
 }

@@ -20,6 +20,8 @@ package grakn.benchmark.runner.pick;
 
 import grakn.core.client.Grakn;
 import grakn.benchmark.runner.probdensity.ProbabilityDensityFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.stream.Stream;
 
@@ -27,6 +29,8 @@ import java.util.stream.Stream;
  * @param <T>
  */
 public class StreamProvider<T> implements StreamProviderInterface<T> {
+    private static final Logger LOG = LoggerFactory.getLogger(StreamProvider.class);
+
     private StreamInterface<T> streamer;
 
     public StreamProvider(StreamInterface<T> streamer) {
@@ -41,6 +45,7 @@ public class StreamProvider<T> implements StreamProviderInterface<T> {
     public Stream<T> getStream(ProbabilityDensityFunction pdf, Grakn.Transaction tx) {
         // Simply limit the stream of ConceptIds to the number given by the probdensity
         int streamLength = pdf.sample();
+        LOG.info("StreamLength (pdf.sample()): " + streamLength);
 
         if (this.streamer.checkAvailable(streamLength, tx)) {
 

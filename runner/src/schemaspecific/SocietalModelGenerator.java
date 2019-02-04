@@ -15,9 +15,7 @@ import grakn.benchmark.runner.strategy.RolePlayerTypeStrategy;
 import grakn.benchmark.runner.strategy.RouletteWheel;
 import grakn.benchmark.runner.strategy.TypeStrategyInterface;
 
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 @Deprecated
 public class SocietalModelGenerator implements SchemaSpecificDataGenerator {
@@ -64,7 +62,7 @@ public class SocietalModelGenerator implements SchemaSpecificDataGenerator {
                 )
         );
 
-        Set<RolePlayerTypeStrategy> employmentRoleStrategies = new HashSet<>();
+        List<RolePlayerTypeStrategy> employmentRoleStrategies = new LinkedList<>();
 
         employmentRoleStrategies.add(
                 new RolePlayerTypeStrategy(

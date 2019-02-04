@@ -9,11 +9,10 @@ import grakn.benchmark.runner.storage.FromIdStorageConceptIdPicker;
 import grakn.benchmark.runner.storage.IdStoreInterface;
 import grakn.benchmark.runner.storage.NotInRelationshipConceptIdPicker;
 import grakn.benchmark.runner.strategy.*;
-import grakn.core.concept.ConceptId;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Random;
+import java.util.TreeSet;
 
 public class RoadNetworkGenerator implements SchemaSpecificDataGenerator {
 
@@ -107,7 +106,7 @@ public class RoadNetworkGenerator implements SchemaSpecificDataGenerator {
                 new RelationshipStrategy(
                         "intersection",
                         new FixedUniform(random, 20, 100),
-                        new HashSet<>(Arrays.asList(unusedEndpointRoads, anyEndpointRoads))
+                        Arrays.asList(unusedEndpointRoads, anyEndpointRoads)
                 )
         );
 
@@ -148,7 +147,7 @@ public class RoadNetworkGenerator implements SchemaSpecificDataGenerator {
                 new RelationshipStrategy(
                         "@has-name",
                         new FixedConstant(60),
-                        new HashSet<>(Arrays.asList(nameOwner, nameValue))
+                        Arrays.asList(nameOwner, nameValue)
                 )
         );
     }

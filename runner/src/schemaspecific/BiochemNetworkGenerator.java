@@ -12,8 +12,8 @@ import grakn.benchmark.runner.storage.NotInRelationshipConceptIdPicker;
 import grakn.benchmark.runner.strategy.*;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Random;
+import java.util.TreeSet;
 
 public class BiochemNetworkGenerator implements SchemaSpecificDataGenerator {
 
@@ -116,7 +116,7 @@ public class BiochemNetworkGenerator implements SchemaSpecificDataGenerator {
                 new RelationshipStrategy(
                         "interaction",
                         new FixedDiscreteGaussian(this.random, 50, 25),
-                        new HashSet<>(Arrays.asList(agentRolePlayer, catalystRolePlayer))
+                        Arrays.asList(agentRolePlayer, catalystRolePlayer)
                 )
         );
 
@@ -151,7 +151,7 @@ public class BiochemNetworkGenerator implements SchemaSpecificDataGenerator {
                 new RelationshipStrategy(
                         "@has-biochem-id",
                         new FixedDiscreteGaussian(random, 20, 5), // more than number of entities being created to compensate for being picked less
-                        new HashSet<>(Arrays.asList(chemicalIdOwner, chemicalIdValue))
+                        Arrays.asList(chemicalIdOwner, chemicalIdValue)
                 )
         );
 
@@ -186,7 +186,7 @@ public class BiochemNetworkGenerator implements SchemaSpecificDataGenerator {
                 new RelationshipStrategy(
                         "@has-biochem-id",
                         new FixedDiscreteGaussian(random, 20, 5), // more than number of entities being created to compensate for being picked less
-                        new HashSet<>(Arrays.asList(enzymeIdOwner, enzymeIdValue))
+                        Arrays.asList(enzymeIdOwner, enzymeIdValue)
                 )
         );
     }

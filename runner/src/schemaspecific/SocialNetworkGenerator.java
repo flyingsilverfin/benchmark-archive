@@ -12,8 +12,8 @@ import grakn.benchmark.runner.storage.IdStoreInterface;
 import grakn.benchmark.runner.strategy.*;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Random;
+import java.util.TreeSet;
 
 public class SocialNetworkGenerator implements SchemaSpecificDataGenerator {
 
@@ -103,7 +103,7 @@ public class SocialNetworkGenerator implements SchemaSpecificDataGenerator {
                 new RelationshipStrategy(
                         "friendship",
                         new ScalingBoundedZipf(this.random, ()->this.getGraphScale(), 0.5, 2.3),
-                        new HashSet<>(Arrays.asList(friendRoleFiller))
+                        Arrays.asList(friendRoleFiller)
                 )
         );
 
@@ -126,7 +126,7 @@ public class SocialNetworkGenerator implements SchemaSpecificDataGenerator {
                 new RelationshipStrategy(
                         "like",
                         new ScalingDiscreteGaussian(random, () -> this.getGraphScale(), 0.05, 0.001),
-                        new HashSet<>(Arrays.asList(likedPageRole, likerPersonRole))
+                        Arrays.asList(likedPageRole, likerPersonRole)
                 )
         );
 
@@ -149,7 +149,7 @@ public class SocialNetworkGenerator implements SchemaSpecificDataGenerator {
                 new RelationshipStrategy(
                         "@has-name",
                         new ScalingDiscreteGaussian(random, () -> this.getGraphScale(), 0.1, 0.03),
-                        new HashSet<>(Arrays.asList(nameOwner, nameValue))
+                        Arrays.asList(nameOwner, nameValue)
                 )
         );
     }

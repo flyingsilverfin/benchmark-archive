@@ -18,6 +18,9 @@
 
 package grakn.benchmark.runner.pick;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -27,6 +30,7 @@ import java.util.stream.Stream;
  */
 public class RandomOffsetGenerator {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RandomOffsetGenerator.class);
     public static Stream<Integer> generate(Random rand, int offsetBound) {
 
         HashSet<Object> previousRandomOffsets = new HashSet<>();
@@ -38,6 +42,7 @@ public class RandomOffsetGenerator {
             int nextChoice = 0;
             while (!foundUnique) {
                 nextChoice = rand.nextInt(offsetBound);
+                LOG.info("RandomOffsetGenerator.nextChoice (nextInt): " + nextChoice);
                 foundUnique = previousRandomOffsets.add(nextChoice);
             }
             return nextChoice;
