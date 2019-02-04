@@ -1,0 +1,19 @@
+define
+
+    # fixed increments
+    biochem-id sub attribute datatype long;
+
+    # fixed increments
+    chemical sub entity,
+        plays agent,
+        has biochem-id; # append uniquely (1 name per chemical)
+
+    # fixed increments
+    enzyme sub entity,
+        plays catalyst,
+        has biochem-id; # append unique (1 per enzyme)
+
+    # fixed increments
+    interaction sub relationship,
+        relates agent, # scale number of agents over time
+        relates catalyst; # scale number of catalysts over time

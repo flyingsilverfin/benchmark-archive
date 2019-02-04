@@ -27,22 +27,28 @@ distribution(
     },
     additional_files = {
         "//runner:benchmark": "benchmark",
-        "//runner:conf/societal_model/queries.yml": "conf/societal_model/queries.yml",
-        "//runner:conf/societal_model/societal_config_1.yml": "conf/societal_model/societal_config_1.yml",
-        "//runner:conf/societal_model/societal_model.gql": "conf/societal_model/societal_model.gql",
-        "//runner:conf/web_content/queries.yml": "conf/web_content/queries.yml",
-        "//runner:conf/web_content/web_content_config.yml": "conf/web_content/web_content_config.yml",
-        "//runner:conf/web_content/web_content_schema.gql": "conf/web_content/web_content_schema.gql",
+        "//runner:conf/road_network/queries.yml": "conf/road_network/queries.yml",
+        "//runner:conf/road_network/road_config.yml": "conf/road_network/road_config.yml",
+        "//runner:conf/road_network/road_network.gql": "conf/road_network/road_network.gql",
+
+        "//runner:conf/social_network/queries.yml": "conf/social_network/queries.yml",
+        "//runner:conf/social_network/social_network_config.yml": "conf/social_network/social_network_config.yml",
+        "//runner:conf/social_network/social_network.gql": "conf/social_network/social_network.gql",
+
+        "//runner:conf/financial_transactions/queries.yml": "conf/financial_transactions/queries.yml",
+        "//runner:conf/financial_transactions/financial_config.yml": "conf/financial_transactions/financial_config.yml",
+        "//runner:conf/financial_transactions/financial.gql": "conf/financial_transactions/financial.gql",
+
+        "//runner:conf/biochem_network/queries.yml": "conf/biochem_network/queries.yml",
+        "//runner:conf/biochem_network/biochem_config.yml": "conf/biochem_network/biochem_config.yml",
+        "//runner:conf/biochem_network/biochem_network.gql": "conf/biochem_network/biochem_network.gql",
+
         "//runner:logback": "conf/logback.xml",
-        
+
         # External dependencies: Elasticsearch and Zipkin
         "//runner:setup.sh": "external-dependencies/setup.sh",
         "@external-dependencies-zipkin//file": "external-dependencies/zipkin.jar",
         "@external-dependencies-elasticsearch//file": "external-dependencies/elasticsearch.zip"
     },
-    empty_directories = [
-        "data/logs",
-        "data/data"
-    ],
     output_filename = "benchmark",
 )

@@ -18,9 +18,10 @@
 
 package grakn.benchmark.runner;
 
+import grakn.benchmark.runner.exception.DataGeneratorException;
 import grakn.benchmark.runner.executor.QueryProfiler;
 import grakn.benchmark.runner.generator.DataGenerator;
-import grakn.benchmark.runner.storage.SchemaManager;
+import grakn.benchmark.runner.util.SchemaManager;
 import grakn.benchmark.runner.util.BenchmarkArguments;
 import grakn.benchmark.runner.util.BenchmarkConfiguration;
 import grakn.benchmark.runner.util.ElasticSearchManager;
@@ -35,10 +36,6 @@ import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -51,7 +48,6 @@ public class GraknBenchmark {
     private static final Logger LOG = LoggerFactory.getLogger(GraknBenchmark.class);
 
     private final BenchmarkConfiguration config;
-    private final String executionName;
 
     /**
      * Entry point invoked by benchmark script
@@ -64,9 +60,12 @@ public class GraknBenchmark {
             // Parse the configuration for the benchmark
             CommandLine arguments = BenchmarkArguments.parse(args);
 
-            ElasticSearchManager.init(arguments);
+            ElasticSearchManager.putIndexTemplate(arguments);
             GraknBenchmark benchmark = new GraknBenchmark(arguments);
             benchmark.start();
+        } catch (DataGeneratorException e) {
+            exitCode = 1;
+            LOG.error("Error in data generator: ", e);
         } catch (Exception e) {
             exitCode = 1;
             LOG.error("Unable to start Grakn Benchmark:", e);
@@ -79,11 +78,6 @@ public class GraknBenchmark {
     public GraknBenchmark(CommandLine arguments) {
         BenchmarkConfiguration benchmarkConfig = new BenchmarkConfiguration(arguments);
         this.config = benchmarkConfig;
-
-        // generate a name for this specific execution of the benchmarking
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-        String dateString = dateFormat.format(new Date());
-        this.executionName = String.join(" ", Arrays.asList(dateString, config.getConfigName(), config.executionName())).trim();
     }
 
 
@@ -96,7 +90,7 @@ public class GraknBenchmark {
         Grakn client = new Grakn(new SimpleURI(config.graknUri()), true);
         Grakn.Session session = client.session(config.getKeyspace());
         SchemaManager.verifyEmptyKeyspace(session);
-        QueryProfiler queryProfiler = new QueryProfiler(session, executionName, config.getQueries());
+        QueryProfiler queryProfiler = new QueryProfiler(session, config.executionName(), config.graphName(), config.getQueries());
         int repetitionsPerQuery = config.numQueryRepetitions();
 
         //TODO add check to make sure currentKeyspace does not exist, if it does throw exception
@@ -108,13 +102,13 @@ public class GraknBenchmark {
 
             List<Integer> numConceptsInRun = config.scalesToProfile();
             for (int numConcepts : numConceptsInRun) {
-                LOG.info("Running queries with " + numConcepts + " concepts");
+                LOG.info("Generating graph to scale... " + numConcepts);
                 dataGenerator.generate(numConcepts);
                 queryProfiler.processStaticQueries(repetitionsPerQuery, numConcepts);
             }
         } else {
             int numConcepts = queryProfiler.aggregateCount();
-            queryProfiler.processStaticQueries(repetitionsPerQuery, numConcepts, "Preconfigured DB - no data gen");
+            queryProfiler.processStaticQueries(repetitionsPerQuery, numConcepts);
         }
 
         session.close();

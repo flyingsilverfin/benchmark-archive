@@ -1,0 +1,13 @@
+graphName: "financial"
+schema: "financial.gql"
+queries: "queries.yml"
+scales:
+  - 4000
+  - 10000
+  - 20000
+repeatsPerQuery: 5
+  # TODO
+  # concurrency:
+  #   clients: 1
+# mixed:
+# replication: 1

@@ -30,7 +30,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.benchmark.runner.storage.ConceptStore;
 import grakn.benchmark.runner.storage.IgniteConceptIdStore;
 import grakn.benchmark.runner.storage.InsertionAnalysis;
-import grakn.benchmark.runner.storage.SchemaManager;
+import grakn.benchmark.runner.util.SchemaManager;
 import grakn.benchmark.runner.strategy.RouletteWheel;
 import grakn.benchmark.runner.strategy.TypeStrategyInterface;
 import org.slf4j.Logger;
@@ -46,7 +46,7 @@ public class DataGenerator {
     private static final Logger LOG = LoggerFactory.getLogger(DataGenerator.class);
 
     private final Grakn.Session session;
-    private final String executionName;
+    private final String graphName ;
     private final List<String> schemaDefinition;
     private int iteration;
     private Random rand;
@@ -57,12 +57,11 @@ public class DataGenerator {
 
     public DataGenerator(Grakn.Session session, BenchmarkConfiguration config, int randomSeed) {
         this.session = session;
-        this.executionName = config.getConfigName();
+        this.graphName = config.graphName();
         this.rand = new Random(randomSeed);
         this.iteration = 0;
         this.schemaDefinition = config.getGraqlSchema();
         initializeGeneration();
-        System.out.println(System.getProperty("user.dir"));
    }
 
     private void initializeGeneration() {
@@ -74,11 +73,10 @@ public class DataGenerator {
             HashSet<EntityType> entityTypes = SchemaManager.getTypesOfMetaType(tx, "entity");
             HashSet<RelationshipType> relationshipTypes = SchemaManager.getTypesOfMetaType(tx, "relationship");
             HashSet<AttributeType> attributeTypes = SchemaManager.getTypesOfMetaType(tx, "attribute");
-
             LOG.info("Initialising ignite...");
             this.storage = new IgniteConceptIdStore(entityTypes, relationshipTypes, attributeTypes);
         }
-        this.dataStrategies = SchemaSpecificDataGeneratorFactory.getSpecificStrategy(this.executionName, this.rand, this.storage);
+        this.dataStrategies = SchemaSpecificDataGeneratorFactory.getSpecificStrategy(this.graphName, this.rand, this.storage);
     }
 
     public void generate(int graphScaleLimit) {
@@ -89,7 +87,6 @@ public class DataGenerator {
         effectively paused while benchmarking takes place
         */
 
-        System.out.println("\n");
         GeneratorFactory gf = new GeneratorFactory();
         int graphScale = dataStrategies.getGraphScale();
 
@@ -106,12 +103,11 @@ public class DataGenerator {
 
                 graphScale = dataStrategies.getGraphScale();
                 printProgress(graphScale, typeStrategy.getTypeLabel());
-
                 tx.commit();
             }
             iteration++;
         }
-        System.out.println("\n");
+        System.out.print("\n");
     }
 
     private void processQueryStream(Stream<Query> queryStream) {
@@ -146,29 +142,54 @@ public class DataGenerator {
 
 
     private void printProgress(int graphScale, String generatedTypeLabel) {
-        int rolePlayers = this.storage.totalRolePlayers();
+        int totalRolePlayers = this.storage.totalRolePlayers();
+        int explicitRolePlayers = this.storage.totalExplicitRolePlayers();
+        // this should actually == number of implicit relationships!
+        int attributeOwners = (totalRolePlayers - explicitRolePlayers)/2;
+
+        int entities = this.storage.totalEntities();
+        int explicitRelationships = this.storage.totalExplicitRelationships();
+        int attributes = this.storage.totalAttributes();
+
+
         int orphanEntities = this.storage.totalOrphanEntities();
         int orphanAttrs = this.storage.totalOrphanAttributes();
         int relDoubleCounts = this.storage.totalRelationshipsRolePlayersOverlap();
-        int relationships = this.storage.totalRelationships();
 
-        double density = relationships/((double)graphScale * graphScale);
+
+        // first order statistics
+        double meanInDegree = ((float) explicitRolePlayers)/graphScale;
+        double meanRolePlayersPerRelationship = ((float) explicitRolePlayers) / explicitRelationships;
+        double meanAttributeOwners = ((float) attributeOwners) / attributes;
+        double proportionEntities = ((float) entities) / graphScale;
+        double proportionRelationships = ((float) explicitRelationships) / graphScale;
+        double proportionAttributes = ((float) attributes) / graphScale;
+
+        // our own density measure
+        // compute how many connections (ie role players) there would be if everyone were fully connected to everything
+        double maxPossibleConnections = attributes * graphScale + explicitRelationships * graphScale;
+        double density = ((float) totalRolePlayers) / maxPossibleConnections;
+
 
         // print info to console on one self-erasing line
         System.out.print("\r");
-        System.out.print(String.format("[%d]  Scale: %d\t(%d RP, %d EO, %d AO, %d DC)\t\tRelationships: %d\t\t Density: %f", this.iteration, graphScale, rolePlayers, orphanEntities, orphanAttrs, relDoubleCounts, relationships, density));
-        System.out.flush();
+        System.out.print(String.format("[%d] %s Scale: %d\t(%f Deg_Cin, %f Deg_Rout, %f Deg_Aout)\t(%d, %d, %d) Entity/Rel/Attr \t (%d EO, %d AO) \t %f density",
+                this.iteration, this.graphName, graphScale, meanInDegree, meanRolePlayersPerRelationship, meanAttributeOwners,
+                entities, explicitRelationships, attributes,
+                orphanEntities, orphanAttrs, density));
 
         // write to log verbosely in DEBUG that it doesn't overwrite
-        LOG.debug(String.format("--- Iteration %d --- ", this.iteration));
-        LOG.debug(String.format("## Generating instances of concept type \"%s\"", generatedTypeLabel));
-        LOG.debug(String.format("## Scale: %d", graphScale));
-        LOG.debug(String.format("## %d role players", rolePlayers));
-        LOG.debug(String.format("## %d entity orphans", orphanEntities));
-        LOG.debug(String.format("## %d attribute orphans", orphanAttrs));
-        LOG.debug(String.format("## %d Rel double counts", relDoubleCounts));
-        LOG.debug(String.format("## %d Relationships", relationships));
-        LOG.debug(String.format("## %f Density", density));
+        LOG.debug(String.format("----- Iteration %d [%s] ----- ", this.iteration, this.graphName));
+        LOG.debug(String.format(">> Generating instances of concept type \"%s\"", generatedTypeLabel));
+        LOG.debug(String.format(">> %d - Scale", graphScale));
+        LOG.debug(String.format(">> %d, %d, %d - entity, explicit relationships, attributes", entities, explicitRelationships, attributes));
+        LOG.debug(String.format(">> %d, %d - entity orphans, attribute orphans ", orphanEntities, orphanAttrs));
+        LOG.debug(String.format(">> %d - Total relationship double counts", relDoubleCounts));
+        LOG.debug(String.format(">> %f, %f, %f - mean Deg_Cin, mean Deg_Rout, mean Deg_Aout",
+                meanInDegree, meanRolePlayersPerRelationship, meanAttributeOwners));
+        LOG.debug(String.format(">> %f, %f %f - proportion entities, relationships, attributes",
+                proportionEntities, proportionRelationships, proportionAttributes));
+        LOG.debug(String.format(">> %f - custom density", density));
     }
 
 }

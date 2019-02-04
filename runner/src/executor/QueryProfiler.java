@@ -45,13 +45,15 @@ public class QueryProfiler {
     private static final Logger LOG = LoggerFactory.getLogger(QueryProfiler.class);
 
     private final String executionName;
+    private final String graphName;
     private final List<Query> queries;
     private final Grakn.Session session;
 
-    public QueryProfiler(Grakn.Session session, String executionName, List<String> queryStrings) {
+    public QueryProfiler(Grakn.Session session, String executionName, String graphName, List<String> queryStrings) {
         this.session = session;
 
         this.executionName = executionName;
+        this.graphName = graphName;
 
         // convert Graql strings into Query types
         this.queries = queryStrings.stream()
@@ -59,16 +61,15 @@ public class QueryProfiler {
                         .collect(Collectors.toList());
     }
 
-    public void processStaticQueries(int numRepeats, int numConcepts, String extraMessage) {
+    public void processStaticQueries(int numRepeats, int numConcepts) {
         try {
-            this.processQueries(queries.stream(), numRepeats, numConcepts, extraMessage);
+            LOG.info("Starting processStaticQueries");
+            this.processQueries(queries.stream(), numRepeats, numConcepts);
+            LOG.info("Finished processStaticQueries");
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.info("LOL", e);
         }
-    }
-
-    public void processStaticQueries(int numRepeats, int numConcepts) {
-        processStaticQueries(numRepeats, numConcepts, null);
     }
 
     public int aggregateCount() {
@@ -78,57 +79,60 @@ public class QueryProfiler {
         }
     }
 
-    /**
-     *
-     * @param queryStream stream of Graql queries
-     * @param numRepeats
-     * @param numConcepts
-     * @param msg
-     * @throws Exception
-     */
-    void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts, String msg) throws Exception {
-
+    void processQueries(Stream<Query> queryStream, int repetitions, int numConcepts) throws Exception {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
             Tracer tracer = Tracing.currentTracer();
 
-            Iterator<Query> queryIterator = queryStream.iterator();
-            int counter = 0;
-            while (queryIterator.hasNext()) {
+            List<Query> queries = queryStream.collect(Collectors.toList());
 
-                Query query = queryIterator.next().withTx(tx);
-                LOG.info("Running query: " + query.toString());
+            for (int rep = 0; rep < repetitions; rep++) {
 
-                Span batchSpan = tracer.newTrace().name("batch-query");
-                batchSpan.tag("concepts", Integer.toString(numConcepts));
-                batchSpan.tag("query", query.toString());
-                batchSpan.tag("executionName", this.executionName);
-                batchSpan.tag("repetitions", Integer.toString(numRepeats));
-                if (msg != null) {
-                    batchSpan.tag("extraTag", msg);
-                }
-                batchSpan.start();
+                for (Query rawQuery : queries) {
+                    Query query = rawQuery.withTx(tx);
 
-                for (int i = 0; i < numRepeats; i++) {
+                    this.eraselinePrint(String.format("Profiling... (repetition %d/%d):\t%s", rep+1, repetitions, query.toString()));
+                    LOG.info("Profiling... repetition " + rep + ": " + query.toString());
+                    Span querySpan = tracer.newTrace().name("query");
+                    LOG.info("New trace with `query` name created");
+                    querySpan.tag("scale", Integer.toString(numConcepts));
+                    LOG.info("Tag `scale`");
+                    querySpan.tag("query", query.toString());
+                    LOG.info("Tag `query`");
+                    querySpan.tag("executionName", this.executionName);
+                    LOG.info("Tag `executionName`");
+                    querySpan.tag("repetitions", Integer.toString(repetitions));
+                    LOG.info("Tag `repetitions`");
+                    querySpan.tag("graphName", this.graphName);
+                    LOG.info("Tag `graphName`");
+                    querySpan.tag("repetition", Integer.toString(rep));
+                    LOG.info("Tag `repetition`");
+                    querySpan.start();
+                    LOG.info("Started query span");
 
-                    Span span = tracer.newChild(batchSpan.context()).name("query-repetition");
-                    span.tag("repetition", Integer.toString(i));
-                    span.start();
-
-                    try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
+                    // perform trace in thread-local storage on the client
+                    try (Tracer.SpanInScope ws = tracer.withSpanInScope(querySpan)) {
                         List<Answer> answer = query.execute();
+                        LOG.info("executed query successfully");
                     } catch (RuntimeException | Error e) {
-                        span.error(e);
+                        querySpan.error(e);
+                        LOG.info("same error should be logged again after LOL", e);
                         throw e;
                     } finally {
-                        span.finish();
+                        querySpan.finish();
+                        LOG.info("query span finished");
                     }
-                    counter ++;
                 }
-                batchSpan.finish();
+                // wait for out-of-band reporting to complete
                 Thread.sleep(500);
             }
+            // wait for out-of-band reporting to complete
             Thread.sleep(1500);
-            System.out.println(counter);
         }
+        System.out.print("\n\n");
+    }
+
+    private void eraselinePrint(String msg) {
+        System.out.print("\r");
+        System.out.print(msg);
     }
 }
