@@ -64,6 +64,10 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     // separately count only roles that are in explicit relationships
     private int totalExplicitRolePlayers = 0;
 
+
+    // testing BUG in ignite COUNT/our mistake I can't find
+    private HashMap<String, Integer> typeCounts = new HashMap<>();
+
     public static final Map<AttributeType.DataType<?>, String> DATATYPE_MAPPING;
     static {
         Map<AttributeType.DataType<?>, String> mapBuilder = new HashMap<>();
@@ -81,6 +85,11 @@ public class IgniteConceptIdStore implements IdStoreInterface {
                                 HashSet<AttributeType> attributeTypes) {
 
         this.collectTypeLabels(entityTypes, relationshipTypes, attributeTypes);
+
+        for (String entityType : entityTypeLabels) { typeCounts.put(entityType, 0); }
+        for (String relationshipType : relationshipTypeLabels) { typeCounts.put(relationshipType, 0); }
+        for (String attributeType : attributeTypeLabels.keySet()) { typeCounts.put(attributeType, 0); }
+
         labelToSqlName = this.mapLabelToSqlName(entityTypeLabels, relationshipTypeLabels, attributeTypeLabels.keySet());
         this.cleanTables();
         this.initializeSqlDriver();
@@ -160,6 +169,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
         // Open JDBC connection.
         try {
             this.conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/");
+            this.conn.setAutoCommit(true);
         } catch (SQLException e) {
             LOG.trace(e.getMessage(), e);
         }
@@ -274,6 +284,8 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     public void addConcept(Concept concept) {
 
         Label conceptTypeLabel = concept.asThing().type().label();
+
+
         String tableName = this.labelToSqlName.get(conceptTypeLabel.toString());
         String conceptId = concept.asThing().id().toString(); // TODO use the value instead for attributes
 
@@ -321,9 +333,13 @@ public class IgniteConceptIdStore implements IdStoreInterface {
                 stmt.setString(ID_INDEX, conceptId);
                 stmt.executeUpdate();
 
+                // count attribute if not exists already
+                Integer currentCount = typeCounts.get(conceptTypeLabel.toString());
+                typeCounts.put(conceptTypeLabel.toString(), currentCount + 1);
+
             } catch (SQLException e) {
                 if (!e.getSQLState().equals("23000")) {
-                    LOG.trace(e.getMessage(), e);
+                    LOG.error(e.getMessage(), e);
                 }
             }
 
@@ -332,9 +348,14 @@ public class IgniteConceptIdStore implements IdStoreInterface {
                     "INSERT INTO " + tableName + " (id, ) VALUES (?, )")) {
                 stmt.setString(ID_INDEX, conceptId);
                 stmt.executeUpdate();
+
+                // count rel/entity if not exists already
+                Integer currentCount = typeCounts.get(conceptTypeLabel.toString());
+                typeCounts.put(conceptTypeLabel.toString(), currentCount + 1);
+
             } catch (SQLException e) {
                 if (!e.getSQLState().equals("23000")) {
-                    LOG.trace(e.getMessage(), e);
+                    LOG.error(e.getMessage(), e);
                 }
             }
         }
@@ -356,6 +377,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
         }
 
         // update in-memory accounting
+        LOG.info("Adding RP: " + conceptId + ", playing `"+role+"`, in relationship: " + relationshipType);
         totalRolePlayers += 1;
         if (!relationshipType.startsWith("@")) {
             totalExplicitRolePlayers += 1;
@@ -387,7 +409,9 @@ public class IgniteConceptIdStore implements IdStoreInterface {
                 stmt.executeUpdate(setCurrentRolesSql);
             }
         } catch (SQLException e) {
-            LOG.trace(e.getMessage(), e);
+            if (!e.getSQLState().equals("23000")) {
+                LOG.error(e.getMessage(), e);
+            }
         }
 
         // add the conceptID to the overall role players table
@@ -399,7 +423,9 @@ public class IgniteConceptIdStore implements IdStoreInterface {
                     stmt.executeUpdate(addRolePlayer);
                 }
             } catch (SQLException e) {
-                LOG.trace(e.getMessage(), e);
+                if (!e.getSQLState().equals("23000")) {
+                    LOG.error(e.getMessage(), e);
+                }
             }
         } catch (SQLException e) {
             LOG.trace(e.getMessage(), e);
@@ -566,8 +592,9 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     }
 
     public int getConceptCount(String typeLabel) {
-        String tableName = labelToSqlName.get(typeLabel);
-        return getCountInTable(tableName);
+        return typeCounts.get(typeLabel);
+//        String tableName = labelToSqlName.get(typeLabel);
+//        return getCountInTable(tableName);
     }
 
 

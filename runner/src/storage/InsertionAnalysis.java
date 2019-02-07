@@ -20,8 +20,6 @@ package grakn.benchmark.runner.storage;
 
 import grakn.benchmark.runner.exception.DataGeneratorException;
 import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
-import grakn.core.concept.Role;
 import grakn.core.graql.InsertQuery;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
@@ -34,6 +32,7 @@ import grakn.core.graql.internal.pattern.property.LabelProperty;
 import grakn.core.graql.internal.pattern.property.RelationshipProperty;
 
 import com.google.common.collect.ImmutableMultiset;
+import org.apache.commons.math3.util.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,7 +42,7 @@ import java.util.stream.Collectors;
  */
 public class InsertionAnalysis {
 
-    public static HashSet<Concept> getInsertedConcepts(InsertQuery query, List<ConceptMap> answers) {
+    public static List<Concept> getInsertedConcepts(InsertQuery query, List<ConceptMap> answers) {
         /*
         Method
 
@@ -74,14 +73,17 @@ public class InsertionAnalysis {
             insertVarsWithoutIds.removeAll(matchVars);
         }
 
-        HashSet<Concept> resultConcepts = new HashSet<>();
+        SortedSet<SortableConcept> resultConcepts = new TreeSet<>();
 
         for (ConceptMap answer: answers){
             for (Var insertVarWithoutId : insertVarsWithoutIds) {
-                resultConcepts.add(answer.get(insertVarWithoutId));
+                resultConcepts.add(new SortableConcept(answer.get(insertVarWithoutId)));
             }
         }
-        return resultConcepts;
+
+        return resultConcepts.stream()
+                .map(SortableConcept::get)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -90,8 +92,8 @@ public class InsertionAnalysis {
      * Can only handle 1 relationship type inserted per query!
      * @return
      */
-    public static Map<Concept, String> getRolePlayersAndRoles(InsertQuery query, List<ConceptMap> answers) {
-        Map<Concept, String> rolePlayers = new HashMap<>();
+    public static List<Pair<Concept, String>> getRolePlayersAndRoles(InsertQuery query, List<ConceptMap> answers) {
+        List<Pair<Concept, String>> rolePlayers = new LinkedList<>();
 
         for (VarPatternAdmin patternAdmin : query.admin().varPatterns()) {
             Optional<RelationshipProperty> relationshipProperty = patternAdmin.getProperty(RelationshipProperty.class);
@@ -107,11 +109,28 @@ public class InsertionAnalysis {
                     // add the (concept, role) to the map
                     answers.stream()
                             .map(conceptMap -> conceptMap.get(var))
-                            .forEach(concept -> rolePlayers.put(concept, role));
+                            .forEach(concept -> rolePlayers.add(new Pair<>(concept, role)));
                 }
             }
         }
+
         return rolePlayers;
+    }
+
+    private static class SortableConcept implements Comparable<SortableConcept> {
+        private Concept concept;
+        public SortableConcept(Concept concept) {
+            this.concept = concept;
+        }
+
+        public Concept get() {
+            return this.concept;
+        }
+
+        @Override
+        public int compareTo(SortableConcept o) {
+            return this.concept.id().compareTo(o.get().id());
+        }
     }
 
     public static String getRelationshipTypeLabel(InsertQuery query) {
@@ -156,5 +175,4 @@ public class InsertionAnalysis {
         varsWithoutIds.removeAll(varsWithIds);
         return varsWithoutIds;
     }
-
 }

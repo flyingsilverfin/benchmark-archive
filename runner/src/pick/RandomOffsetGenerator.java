@@ -42,7 +42,7 @@ public class RandomOffsetGenerator {
             int nextChoice = 0;
             while (!foundUnique) {
                 nextChoice = rand.nextInt(offsetBound);
-                LOG.info("RandomOffsetGenerator.nextChoice (nextInt): " + nextChoice);
+                LOG.info("RandomOffsetGenerator.nextChoice (nextInt) [nextBound]: " + nextChoice + "[" + offsetBound  +"]");
                 foundUnique = previousRandomOffsets.add(nextChoice);
             }
             return nextChoice;

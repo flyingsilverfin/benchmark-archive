@@ -92,13 +92,14 @@ public class RelationshipGenerator extends Generator<RelationshipStrategy> {
                 Iterator<ConceptId> iter = conceptIdStream.iterator();
 
                 if (!iter.hasNext()) {
-                    LOG.trace("No role player for role " + roleLabel + ", skipping relationship " + relationshipTypeLabel);
+                    LOG.info("No role player for role " + roleLabel + ", skipping relationship " + relationshipTypeLabel);
                     return null;
                 }
 
                 // Build the match insert query
                 while (iter.hasNext()) {
                     ConceptId conceptId = iter.next();
+                    LOG.info("Picking player for role: " + roleLabel + ", id: " + conceptId.toString());
                     // Add the concept to the query
                     Var v = Graql.var().asUserDefined();
                     if (matchVarPattern == null) {

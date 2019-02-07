@@ -22,8 +22,6 @@ import grakn.benchmark.runner.probdensity.ProbabilityDensityFunction;
 import grakn.core.concept.RelationshipType;
 
 import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
 
 /**
  *

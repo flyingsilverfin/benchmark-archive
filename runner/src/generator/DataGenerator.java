@@ -33,6 +33,7 @@ import grakn.benchmark.runner.storage.InsertionAnalysis;
 import grakn.benchmark.runner.util.SchemaManager;
 import grakn.benchmark.runner.strategy.RouletteWheel;
 import grakn.benchmark.runner.strategy.TypeStrategyInterface;
+import org.apache.commons.math3.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,18 +96,21 @@ public class DataGenerator {
                 TypeStrategyInterface typeStrategy = operationStrategies.next().next();
                 GeneratorInterface generator = gf.create(typeStrategy, tx); // TODO Can we do without creating a new generator each iteration
 
+                // print the current state and what we're about to generate
+                printProgress(graphScale, typeStrategy.getTypeLabel());
+
                 // create the stream of insert/match-insert queries
                 Stream<Query> queryStream = generator.generate();
 
                 // execute & parse the results
                 this.processQueryStream(queryStream);
 
-                graphScale = dataStrategies.getGraphScale();
-                printProgress(graphScale, typeStrategy.getTypeLabel());
                 tx.commit();
             }
+            graphScale = dataStrategies.getGraphScale();
             iteration++;
         }
+        printProgress(graphScale, "FINISHED"); // for debugging only
         System.out.print("\n");
     }
 
@@ -117,24 +121,25 @@ public class DataGenerator {
         queryStream.map(q -> (InsertQuery) q)
                 .forEach(q -> {
                     List<ConceptMap> insertions = q.execute();
-                    HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
+                    List<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
                     if (insertedConcepts.isEmpty()) {
                         throw new RuntimeException("No concepts were inserted");
                     }
                     insertedConcepts.forEach(concept -> this.storage.addConcept(concept));
 
                     // check if we have to update any roles by first checking if any relationships added
+                    LOG.info("Insert query: " + q);
                     String relationshipAdded = InsertionAnalysis.getRelationshipTypeLabel(q);
                     if (relationshipAdded != null) {
-                        Map<Concept, String> rolePlayersAdded = InsertionAnalysis.getRolePlayersAndRoles(q, insertions);
+                        List<Pair<Concept, String>> rolePlayersAdded = InsertionAnalysis.getRolePlayersAndRoles(q, insertions);
 
-                        rolePlayersAdded.entrySet().stream()
-                                .forEach(entry ->
+                        rolePlayersAdded.stream()
+                                .forEach(pair->
                                         this.storage.addRolePlayer(
-                                                entry.getKey().id().toString(),
-                                                entry.getKey().asThing().type().label().toString(),
+                                                pair.getFirst().id().toString(),
+                                                pair.getFirst().asThing().type().label().toString(),
                                                 relationshipAdded,
-                                                entry.getValue()
+                                                pair.getSecond()
                                         ));
                     }
                 });
@@ -183,10 +188,11 @@ public class DataGenerator {
         LOG.debug(String.format(">> Generating instances of concept type \"%s\"", generatedTypeLabel));
 //        LOG.debug(String.format(">> %d - Scale", graphScale));
         LOG.debug(String.format(">> %d, %d, %d - entity, explicit relationships, attributes", entities, explicitRelationships, attributes));
-//        LOG.debug(String.format(">> %d, %d - entity orphans, attribute orphans ", orphanEntities, orphanAttrs));
+        LOG.debug(String.format(">> %d, %d - entity orphans, attribute orphans ", orphanEntities, orphanAttrs));
 //        LOG.debug(String.format(">> %d - Total relationship double counts", relDoubleCounts));
-//        LOG.debug(String.format(">> %f, %f, %f - mean Deg_Cin, mean Deg_Rout, mean Deg_Aout",
-//                meanInDegree, meanRolePlayersPerRelationship, meanAttributeOwners));
+        LOG.debug(String.format(">> %d, %d - total RP, total explicit RP", totalRolePlayers, explicitRolePlayers));
+        LOG.debug(String.format(">> %f, %f, %f - mean Deg_Cin, mean Deg_Rout, mean Deg_Aout",
+                meanInDegree, meanRolePlayersPerRelationship, meanAttributeOwners));
 //        LOG.debug(String.format(">> %f, %f %f - proportion entities, relationships, attributes",
 //                proportionEntities, proportionRelationships, proportionAttributes));
 //        LOG.debug(String.format(">> %f - custom density", density));

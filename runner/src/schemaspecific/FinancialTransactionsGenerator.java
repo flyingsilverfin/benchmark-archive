@@ -13,7 +13,6 @@ import grakn.benchmark.runner.strategy.*;
 
 import java.util.Arrays;
 import java.util.Random;
-import java.util.TreeSet;
 
 public class FinancialTransactionsGenerator implements SchemaSpecificDataGenerator{
 

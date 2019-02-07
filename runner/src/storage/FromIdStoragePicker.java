@@ -21,6 +21,9 @@ package grakn.benchmark.runner.storage;
 
 import grakn.core.client.Grakn;
 import grakn.benchmark.runner.pick.Picker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Random;
 
 /**
@@ -29,6 +32,7 @@ import java.util.Random;
  * @param <T>
  */
 public abstract class FromIdStoragePicker<T> extends Picker<T> {
+    private static final Logger LOG = LoggerFactory.getLogger(FromIdStoragePicker.class);
 
     protected IdStoreInterface conceptStore;
     protected String typeLabel;
@@ -41,6 +45,9 @@ public abstract class FromIdStoragePicker<T> extends Picker<T> {
 
 
     protected Integer getConceptCount(Grakn.Transaction tx) {
-        return this.conceptStore.getConceptCount(this.typeLabel);
+        Integer count = this.conceptStore.getConceptCount(this.typeLabel);
+        count = Math.min(1, count);
+        LOG.info("  Count for " + typeLabel + ": " + count);
+        return count;
     }
 }

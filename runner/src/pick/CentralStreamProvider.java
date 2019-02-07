@@ -20,6 +20,8 @@ package grakn.benchmark.runner.pick;
 
 import grakn.core.client.Grakn;
 import grakn.benchmark.runner.probdensity.ProbabilityDensityFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.stream.IntStream;
@@ -42,6 +44,8 @@ import java.util.stream.Stream;
  * @param <T>
  */
 public class CentralStreamProvider<T> implements StreamProviderInterface<T> {
+    private static final Logger LOG = LoggerFactory.getLogger(CentralStreamProvider.class);
+
     StreamInterface<T> streamer;
     private Boolean isReset;
     private ArrayList<T> conceptIdList;
@@ -68,6 +72,7 @@ public class CentralStreamProvider<T> implements StreamProviderInterface<T> {
         if (this.isReset) {
             // re-fill the internal buffer of conceptIds to be repeated (the centrality aspect)
             int quantity = this.centralConceptsPdf.sample();
+            LOG.info("New Central concepts: " + quantity);
 
             if (this.streamer instanceof NotInRelationshipConceptIdStream) {
                 ((NotInRelationshipConceptIdStream)this.streamer).setRequiredLength(quantity);
@@ -88,6 +93,7 @@ public class CentralStreamProvider<T> implements StreamProviderInterface<T> {
 
             // number of items to read, which if longer than the length of the IDs list will wrap
             int streamLength = pdf.sample();
+            LOG.info("Central stream length: " + streamLength);
             int startIndex = consumeFrom;
             int endIndex = startIndex + streamLength;
             this.consumeFrom = (endIndex) % this.conceptIdList.size();
