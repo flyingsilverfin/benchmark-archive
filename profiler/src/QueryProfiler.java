@@ -131,6 +131,7 @@ class QueryProfiler implements Runnable {
                     }
 
                     if (deleteInsertedConcepts && insertedConceptIds != null) {
+                        System.out.println("Deleting concepts from query: " + query);
                         if (traceDeleteInsertedConcepts) {
                             Span deleteQuerySpan = tracer.newChild(concurrentExecutionSpan.context());
                             deleteQuerySpan.name("delete-query");
@@ -147,7 +148,9 @@ class QueryProfiler implements Runnable {
                                     match.add(id);
                                 }
                                 GraknClient.Transaction tx = session.transaction().write();
-                                tx.execute(Graql.match(match).delete(vars));
+                                GraqlDelete deleteQuery = Graql.match(match).delete(vars);
+                                System.out.println("Executing delete query: " + deleteQuery);
+                                tx.execute(deleteQuery);
                                 tx.commit();
                             } finally {
                                 deleteQuerySpan.finish();
