@@ -113,6 +113,7 @@ class QueryProfiler implements Runnable {
                         // open new transaction
                         GraknClient.Transaction tx = session.transaction().write();
                         List<? extends Answer> answer = tx.execute(query);
+                        System.out.println("Query answer: " + answer);
 
                         if (query instanceof GraqlInsert) {
                             insertedConceptIds = InsertQueryAnalyser.getInsertedConcepts((GraqlInsert)query, (List<ConceptMap>)answer)
